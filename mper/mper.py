@@ -504,15 +504,15 @@ def create_invite_link(
     scopes: List[str] = None
 ) -> str:
     """
-    Create a Discord bot invite link.
-
-    Args:
-        client_id: The bot's client ID
-        permissions: The permission integer
-        scopes: List of OAuth2 scopes (default: ['bot', 'applications.commands'])
-
+    Discord用のOAuth2招待URLを生成する。
+    
+    Parameters:
+    	client_id (str): ボットのクライアントID
+    	permissions (int): 招待に含める権限ビットの合計値
+    	scopes (List[str], optional): OAuth2スコープの一覧。省略した場合は `['bot', 'applications.commands']` を使用する
+    
     Returns:
-        The invite URL
+    	invite_url (str): 生成された招待URL文字列
     """
     if scopes is None:
         scopes = ['bot', 'applications.commands']
@@ -521,8 +521,49 @@ def create_invite_link(
     return f"https://discord.com/oauth2/authorize?client_id={client_id}&permissions={permissions}&scope={scope_str}"
 
 
+def generate_invite_url(
+    path: str,
+    client_id: str,
+    scopes: List[str] = None
+) -> str:
+    """
+    ディレクトリまたはファイルをスキャンして、必要なパーミッションを自動検出し招待URLを生成する。
+
+    CLIと同じ動作をライブラリから簡単に実行できる。
+
+    Args:
+        path: スキャン対象のディレクトリまたはファイルのパス
+        client_id: BotのクライアントID
+        scopes: OAuth2スコープのリスト（デフォルト: ['bot', 'applications.commands']）
+
+    Returns:
+        生成された招待URL
+
+    Example:
+        >>> import mper
+        >>> url = mper.generate_invite_url("./my_bot", client_id="123456789")
+        >>> print(url)
+    """
+    import os
+
+    if os.path.isfile(path):
+        result = scan_file(path)
+    else:
+        result = scan_directory(path)
+
+    permission_names = result['invite_link_permissions']
+    permissions = calculate_permission_integer(permission_names)
+    return create_invite_link(client_id, permissions, scopes)
+
+
 def write_invite_link_to_file(invite_link: str, file_path: str = 'bot_invite_url.txt') -> None:
-    """Write the invite link to a file."""
+    """
+    指定したファイルに招待リンクを追記する。
+    
+    Parameters:
+    	invite_link (str): 追記する招待URL文字列。
+    	file_path (str): 招待リンクを書き込むファイルのパス。存在しない場合は新規作成され、末尾に追記される。
+    """
     with open(file_path, 'a') as file:
         file.write(invite_link + '\n')
 
